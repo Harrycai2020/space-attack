@@ -3,7 +3,7 @@ import random
 import pygame.freetype
 # pylint: disable=no-member
 
-# filepath = r'C:\Users\Aaron\Google Drive\Tutor\Coding\Python\Helicopter attack!'
+
 
 class Game:
     state = dict()
