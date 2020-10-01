@@ -19,21 +19,30 @@ class Game:
         self.clock = pygame.time.Clock() # object to track time
         self.clock.tick(60) # tells clock to tick 60 times a second, 60fps
 
+        self.score = 0
+
         pygame.font.init()
-        self.font = pygame.font.SysFont("Impact", 30)
+        self.font = pygame.font.SysFont("Impact", 50)
         self.background_image = pygame.image.load("./sprites/background.jpg")
         self.background_image = pygame.transform.scale(self.background_image, (self.width, self.height))
 
         self.missile_sound = pygame.mixer.Sound("./sounds/missile.wav")
         self.explosion_sound = pygame.mixer.Sound("./sounds/explosion.wav")
         
-
-        self.state["play"] = True
+        self.state["play"] = False
         self.state["quit"] = False
+        self.state["end"] = False
+        self.state["start"] = True
 
         while self.state["quit"] is False:
+            if self.state["start"] is True:
+                self.start()
             if self.state["play"] is True:
                 self.play_game()
+            if self.state["end"] is True:
+                self.end()
+            if self.state["quit"] is True:
+                pass
     
     def play_game(self):
         self.player = Player(self, 50, self.height // 2)
@@ -55,6 +64,8 @@ class Game:
         inside_button = CircleButton((255, 255, 0), (255, 255, 0), 100, self.height - 100, 30)
         outside_button = CircleButton((255, 255, 255), (255, 255, 255), 100, self.height - 100, 75)
         
+        exitwarning = pygame.image.load("./sprites/exitwarning.jpg")
+        exitwarning = pygame.transform.scale(exitwarning, (self.width, self.height))
 
         while self.state["quit"] is False: # MAIN GAME LOOP
             pressed = pygame.key.get_pressed()
@@ -135,7 +146,20 @@ class Game:
 
             for event in pygame.event.get(): # clears all the events in pygame 
                 if event.type == pygame.QUIT: # important to check if quit rather than clear
-                    self.new_state("quit")
+                    pause = True
+                    while pause is True:
+                        self.screen.blit(exitwarning, (0,0))
+                        pygame.display.flip() # updates game window
+
+                        # very important
+                        for event in pygame.event.get():
+                            pass
+                        
+                        # make buttons 
+                        # left = yes
+                        # right = no
+
+                    # self.new_state("quit")
             
             pygame.display.flip() # updates game window
             self.screen.blit(self.background_image, (0,0))
@@ -182,9 +206,6 @@ class Game:
                 enemy.draw()
 
 
-
-            
-
             shoot_button.draw(self.screen)
             shoot1_button.draw(self.screen)
             shoot2_button.draw(self.screen)
@@ -201,7 +222,114 @@ class Game:
 
             self.player.draw_health()
 
+            if self.player.current_health <= 0: # game over
+                self.new_state("end")
+                self.state["play"] == False
+                self.state["end"] == True
+                break
+
             
+            text = self.font.render(f"SCORE: {str(self.score)}", True, (255, 255, 255))
+            textRect = text.get_rect()
+            self.screen.blit(text, textRect)
+
+
+
+    def start(self):
+        self.startfont = pygame.font.SysFont("Impact", 100)
+
+        self.start_image = pygame.image.load("./sprites/start_screen.png")
+        self.start_image = pygame.transform.scale(self.start_image, (self.width, self.height))
+
+        title_str = "Helicopter Attack!"
+
+        self.start_button = Image_Button(self.width // 2 - 200 // 2, self.height // 2, 200, 200, "./sprites/start_button.png")
+
+        while self.state["start"] is True:
+            ###
+            black = True
+            for i, char in enumerate(title_str):
+
+                if black is True:
+                    letter = self.startfont.render(char, True, (0, 0, 0))
+                    black = False
+                else:
+                    letter = self.startfont.render(char, True, (255, 255, 0))
+                    black = True
+
+                text_rect = letter.get_rect(center=(self.width // 2 - len(title_str)*40 // 2 + 40*i, self.height // 5))
+                self.screen.blit(letter, text_rect)
+            ###
+
+
+
+            pygame.display.flip() # updates game window
+            self.screen.blit(self.start_image, (0,0))
+
+            self.start_button.draw(self.screen)
+
+            # self.screen.blit(start_text, text_rect)
+
+            for event in pygame.event.get(): # clears all the events in pygame 
+                pos = pygame.mouse.get_pos()
+
+                if event.type == pygame.QUIT: # important to check if quit rather than clear
+                    self.new_state("quit")
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.start_button.isOver(pos):
+                        self.new_state("play")
+
+
+    def end(self):
+        # end_text = self.font.render(f"GAME OVER: SCORE = {str(self.score)}", True, (255, 255, 255))
+        endfont = pygame.font.SysFont("Impact", 100)
+
+        end_text = endfont.render(f"M I S S I O N    F A I L E D", True, (255, 0, 0))
+        text_rect = end_text.get_rect(center=(self.width // 2, self.height // 5)) # centers
+
+        score_text = endfont.render(f"SCORE = {str(self.score)}", True, (255, 255, 255))
+        score_rect = score_text.get_rect(center=(self.width // 2, self.height // 5 + 150)) # centers
+
+        self.restart_button = Image_Button(self.width // 2 - 400 // 2, self.height // 2, 400, 200, "./sprites/restart_button.png")
+            
+        while self.state["end"] is True:
+            pygame.display.flip() # updates game window
+            self.screen.blit(self.background_image, (0,0))
+
+            self.screen.blit(end_text, text_rect)
+
+            self.screen.blit(score_text, score_rect)
+
+            self.restart_button.draw(self.screen)
+
+            for event in pygame.event.get(): # clears all the events in pygame 
+                pos = pygame.mouse.get_pos()
+
+                if event.type == pygame.QUIT: # important to check if quit rather than clear
+                    self.new_state("quit")
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.restart_button.isOver(pos):
+                        self.new_state("start")
+
+
+    def new_state(self, value):
+        # updates all states in dict
+        for key, _ in self.state.items():
+            if key == value:
+                self.state[key] = True
+            else:
+                self.state[key] = False
+
+
+    # def exit_screen(self):
+        # exitfont = pygame.font.SysFont("Impact", 100)
+        # end_text = exitfont.render(f"Do you want to give up mission?", True, (255, 0, 0))
+        # text_rect = end_text.get_rect(center=(self.width // 2, self.height // 5)) # centers
+
+
+
 
 
 class Player:
@@ -268,7 +396,11 @@ class Player:
         for i in range(self.max_health):
             current_x -= gap
             current_x -= 80 # how wide our hearts are
-            self.game.screen.blit(self.health_picture, (current_x, gap))
+
+            if i >= self.current_health:
+                self.game.screen.blit(self.health_empty_picture, (current_x, gap))
+            else:
+                self.game.screen.blit(self.health_picture, (current_x, gap))
 
 
     def shoot(self):
@@ -341,6 +473,8 @@ class Missile:
                 self.y -= 20
                 self.game.enemies.remove(enemy)
                 pygame.mixer.Sound.play(self.game.explosion_sound)
+
+                self.game.score += 1
                 break
 
 
@@ -383,10 +517,14 @@ class Missile1:
                 self.y += min(y_diff // 50, -10)
 
             ####
-        else:
+        elif self.explode is True:
             self.countdown -= 1
         if self.countdown == 0:
             self.game.missiles.remove(self) # removes item from list
+
+        if len(self.game.enemies) == 0:
+            self.x += 5
+        
 
     def check_collision(self):
         for enemy in self.game.enemies:
@@ -399,6 +537,8 @@ class Missile1:
                 self.y -= 40
                 self.game.enemies.remove(enemy)
                 pygame.mixer.Sound.play(self.game.explosion_sound)
+
+                self.game.score += 1
                 break
 
 
@@ -451,10 +591,13 @@ class Missile2:
             
 
             ####
-        else:
+        elif self.explode is True:
             self.countdown -= 1
         if self.countdown == 0:
             self.game.missiles.remove(self) # removes item from list
+
+        if len(self.game.enemies) == 0:
+            self.x += 5
 
     def check_collision(self):
         for enemy in self.game.enemies:
@@ -472,6 +615,8 @@ class Missile2:
                 self.game.missiles.append(Missile(self.game, self.x, self.y, up=True))
                 self.game.missiles.append(Missile(self.game, self.x, self.y, down=True))
                 self.game.missiles.append(Missile(self.game, self.x, self.y, left=True))
+
+                self.game.score += 1
 
                 break
 
@@ -512,6 +657,8 @@ class E_Missile1:
                     self.y = self.game.player.y + self.game.player.height // 2
                     self.x = self.game.player.x + self.game.player.width // 2
                     pygame.mixer.Sound.play(self.game.explosion_sound)
+
+                    self.game.player.current_health -= 1
 
 
 
@@ -645,6 +792,31 @@ class Button:
             if pos[1] > self.y and pos[1] < self.y + self.height:
                 return True
             
+        return False
+
+
+class Image_Button:
+    # custom button that uses image instead
+    # no support for text
+    def __init__(self, x, y, width, height, image_path):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.image_path = image_path
+
+        self.image = pygame.image.load(image_path)
+        self.image = pygame.transform.scale(self.image, (width, height))
+
+    def draw(self, screen):
+        # draw the button on the screen            
+        screen.blit(self.image, (self.x, self.y))
+
+    def isOver(self, pos):
+        #Pos is the mouse position or a tuple of (x,y) coordinates
+        if pos[0] > self.x and pos[0] < self.x + self.width:
+            if pos[1] > self.y and pos[1] < self.y + self.height:
+                return True
         return False
 
 
